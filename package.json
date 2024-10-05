@@ -1,0 +1,30 @@
+{
+  "name": "pulse",
+  "version": "1.0.0",
+  "description": "a chat application",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yaredybk/pulse.git"
+  },
+  "keywords": [
+    "chat",
+    "message",
+    "messanger",
+    "nodejs",
+    "server",
+    "pulse"
+  ],
+  "author": "yared b.",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yaredybk/pulse/issues"
+  },
+  "homepage": "https://github.com/yaredybk/pulse#readme",
+  "dependencies": {
+    "express": "^4.21.0"
+  }
+}
