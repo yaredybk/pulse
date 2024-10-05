@@ -1,4 +1,7 @@
 const express = require('express');
+const WebSocket = require('ws');
+const { _rd } = require('./utils/redis');
+const { newWebSocket } = require('./utils/webSocket');
 const app = express();
 
 app.get('/', (rq, rs) => {
@@ -6,6 +9,8 @@ app.get('/', (rq, rs) => {
     <p>this is a chat application</p>`);
 });
 
-app.listen(process.env.PORT || 5000, () => {
-  console.log(`server listenning on port:${process.env.PORT || 5000}`);
+const server = app.listen(process.env.PORT || 5000, () => {
+  console.log(`-http- listening @:${process.env.PORT || 5000}`);
 });
+
+newWebSocket(server, () => newWebSocket(server));
