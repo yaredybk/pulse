@@ -1,10 +1,11 @@
+require('dotenv').config();
 const { createClient } = require('redis');
 
 // class for redis commands
 class RedisClient {
   constructor() {
     this.isAlive = false;
-    this.cl = createClient();
+    this.cl = createClient(process.env.REDIS_URL);
     this.cl.connect().catch((error) => {
       console.log(`Redis client not connected to server: ${error}`);
     });

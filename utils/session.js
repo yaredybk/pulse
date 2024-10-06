@@ -1,9 +1,10 @@
 const RedisStore = require('connect-redis').default;
 const session = require('express-session');
+require('dotenv').config();
 const { createClient } = require('redis');
 
 // Initialize client.
-let redisClient = createClient();
+let redisClient = createClient(process.env.REDIS_URL);
 redisClient.connect().catch(console.error);
 
 // Initialize store.
