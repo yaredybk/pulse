@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
-    "dev":"nodemon index.js",
+    "dev": "nodemon index.js",
     "build": ""
   },
   "repository": {
@@ -28,7 +28,11 @@
   },
   "homepage": "https://github.com/yaredybk/pulse#readme",
   "dependencies": {
+    "connect-redis": "^7.1.1",
+    "dotenv": "^16.4.5",
     "express": "^4.21.0",
+    "express-session": "^1.18.0",
+    "pg": "^8.13.0",
     "redis": "^4.7.0",
     "ws": "^8.18.0"
   },
