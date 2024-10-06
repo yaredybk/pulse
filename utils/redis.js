@@ -5,7 +5,7 @@ const { createClient } = require('redis');
 class RedisClient {
   constructor() {
     this.isAlive = false;
-    this.cl = createClient(process.env.REDIS_URL);
+    this.cl = createClient({ url: process.env.REDIS_URL });
     this.cl.connect().catch((error) => {
       console.log(`Redis client not connected to server: ${error}`);
     });

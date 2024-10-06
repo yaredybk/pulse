@@ -4,7 +4,7 @@ require('dotenv').config();
 const { createClient } = require('redis');
 
 // Initialize client.
-let redisClient = createClient(process.env.REDIS_URL);
+let redisClient = createClient({ url: process.env.REDIS_URL });
 redisClient.connect().catch(console.error);
 
 // Initialize store.
@@ -29,6 +29,5 @@ const ss = session({
   },
   name: 'anon',
 });
-
 
 module.exports._session = ss;
