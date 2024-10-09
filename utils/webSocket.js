@@ -1,3 +1,4 @@
+const { claimCheck,requiresAuth } = require('express-openid-connect');
 const WebSocket = require('ws');
 
 const maxClients = 3;
@@ -16,6 +17,11 @@ function newWebSocket(server) {
       ws.send('Server is overloaded. Please try again later!');
       ws.close();
     }
+    // const ch = claimCheck((req, claims) => {
+    //   console.log(claims);
+    // });
+    // ch(rq,rs,()=>null);
+    // console.warn('WSS\n',rq.oidc.user);
     ws.send('wellcome to PULSE!\nWho may i call you?');
     ws.on('message', (message) => {
       if (message.length > 15)
