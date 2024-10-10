@@ -1,4 +1,5 @@
 require('dotenv').config();
+const path = require('path');
 const express = require('express');
 const session = require('express-session');
 const { auth, requiresAuth } = require('express-openid-connect');
@@ -20,6 +21,7 @@ const { _session } = require('./utils/session');
 // });
 
 const app = express();
+app.set('env', process.env.NODE_ENV || 'production');
 app.use(helmet());
 const config = {
   authRequired: false,
@@ -76,7 +78,11 @@ app.use(_session);
 app.get('/api/protected', (rq, rs) => {
   rs.send({ status: 'you are authenticated!', user: rq.oidc.user });
 });
-app.use('/a', express.static('a', { fallthrough: false }));
+app.use('/a', express.static('a', { fallthrough: true }));
+app.get('/a/*', (_, res) => {
+  res.sendFile(path.join(__dirname, './a/index.html'));
+});
+app.use(express.json());
 app.use('/api', require('./src/routes/api_routes.js'));
 const server = app.listen(process.env.PORT || 5000, () => {
   console.log(`-http- listening @:${process.env.PORT || 5000}`);
