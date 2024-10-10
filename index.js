@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
-const { auth,requiresAuth } = require('express-openid-connect');
+const { auth, requiresAuth } = require('express-openid-connect');
 const helmet = require('helmet');
 const WebSocket = require('ws');
 // const { _rd } = require('./utils/redis');/
@@ -30,7 +30,7 @@ const config = {
   issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL,
 };
 app.use(async (rq, rs, nx) => {
-  console.warn(rq.url);
+  console.warn('->', rq.url);
   // console.warn(rq.oidc.user);
   nx();
 });
@@ -46,41 +46,38 @@ app.use(
     issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL,
     routes: {
       login: false,
+      callback: false,
     },
   })
 );
-app.get('/login', (req, res) =>
+app.get('/api/login', (req, res) =>
   res.oidc.login({
-    returnTo: 'http://localhost:5001/a/profile',
+    returnTo: process.env.AUTH0_AUDIENCE + '/a/profile/me?callback=login',
     authorizationParams: {
-      redirect_uri: process.env.AUTH0_AUDIENCE + '/callback',
+      redirect_uri: process.env.AUTH0_AUDIENCE + '/api/profile/callback',
     },
   })
+);
+app.get('/api/profile/callback', async (req, res) =>
+  res.oidc.callback({
+    redirectUri: process.env.AUTH0_AUDIENCE + '/api/profile/callback',
+  })
+);
+app.post(
+  '/api/profile/callback',
+  express.urlencoded({ extended: false }),
+  async (req, res) =>
+    res.oidc.callback({
+      redirectUri: process.env.AUTH0_AUDIENCE + '/api/profile/callback',
+    })
 );
 app.use(express.static('pages'));
 app.use(_session);
-// TEST
-
-// req.isAuthenticated is provided from the auth router
-// app.get('/', (req, res) => {
-//   res.send(req.oidc.isAuthenticated() ? 'Logged in' : 'Logged out');
-// });
-
-// app.use(
-//   auth({
-//     audience: process.env.AUTH0_AUDIENCE,
-//     issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL,
-//     // secret: process.env.AUTH0_SECRET,
-//     // tokenSigningAlg: 'HS256',
-//     authRequired: true,
-//   })
-// );
-
 app.get('/api/protected', (rq, rs) => {
-  rs.send({status:'you are authenticated!',user:rq.oidc.user});
+  rs.send({ status: 'you are authenticated!', user: rq.oidc.user });
 });
 app.use('/a', express.static('a', { fallthrough: false }));
-app.use('/api',require('./src/routes/api_routes.js'))
+app.use('/api', require('./src/routes/api_routes.js'));
 const server = app.listen(process.env.PORT || 5000, () => {
   console.log(`-http- listening @:${process.env.PORT || 5000}`);
 });

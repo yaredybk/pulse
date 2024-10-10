@@ -11,15 +11,11 @@ class _pg {
     return new Promise((rs, rj) =>
       this.pool.connect().then((c) => {
         c.query(...args)
-          .then((r) => {
+          .then((...r) => {
             c.release();
-            rs(r);
+            rs(...r);
           })
-          .catch((e) => {
-            console.warn('-pg-query\n',e);
-            c.release();
-            rj(new Error('query failed'));
-          });
+          .catch(rj);
       })
     );
   }
