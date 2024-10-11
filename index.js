@@ -22,15 +22,31 @@ const { _session } = require('./utils/session');
 
 const app = express();
 app.set('env', process.env.NODE_ENV || 'production');
+
+
+// helmet.contentSecurityPolicy({
+//   useDefaults: true,
+//   directives: {
+//     'img-src': [
+//       "'self'",
+//       'https://s.gravatar.com',
+//       'https://i1.wp.com/cdn.auth0.com',
+//       'https://lh3.googleusercontent.com',
+//     ],
+//   },
+// });
 app.use(helmet());
-const config = {
-  authRequired: false,
-  auth0Logout: true,
-  secret: process.env.AUTH0_SECRET,
-  baseURL: process.env.AUTH0_AUDIENCE,
-  clientID: process.env.AUTH0_CLIENT_ID,
-  issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL,
-};
+app.use(helmet.contentSecurityPolicy({
+  useDefaults: true,
+  directives: {
+    'img-src': [
+      "'self'",
+      'https://s.gravatar.com',
+      'https://i1.wp.com/cdn.auth0.com',
+      'https://lh3.googleusercontent.com',
+    ],
+  },
+}));
 app.use(async (rq, rs, nx) => {
   console.warn('->', rq.url);
   // console.warn(rq.oidc.user);
