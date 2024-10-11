@@ -6,16 +6,16 @@ const { createClient } = require('redis');
 // Initialize client.
 let redisClient = createClient({ url: process.env.REDIS_URL });
 redisClient.connect().catch(console.error);
-
+redisClient.se;
 // Initialize store.
-let redisStore = new RedisStore({
+let _rdSess = new RedisStore({
   client: redisClient,
   prefix: 'myapp:',
 });
 
 // Initialize session storage.
 const ss = session({
-  store: redisStore,
+  store: _rdSess,
   resave: false, // required: force lightweight session keep alive (touch)
   saveUninitialized: true, // Create session for new users
   secret: process.env.SESSION_KEY,
@@ -30,4 +30,4 @@ const ss = session({
   name: 'anon',
 });
 
-module.exports._session = ss;
+module.exports = { _session: ss, _rdSess };
