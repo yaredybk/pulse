@@ -5,7 +5,7 @@
 
 -- initialize database
 -- Create a new database called 'main'
-CREATE DATABASE main;
+
 
 -- update updated column in a table
 CREATE OR REPLACE FUNCTION change_updated_at_column()
@@ -16,6 +16,7 @@ BEGIN
 END;
 $$ language 'plpgsql';
 -- USERS TABLE
+DROP TABLE IF EXISTS users;
 CREATE TABLE users (
   iduser SERIAL PRIMARY KEY,
   uuid UUID DEFAULT gen_random_uuid() UNIQUE NOT NULL,
@@ -39,15 +40,17 @@ update on users for each row
 execute function change_updated_at_column ();
 
 -- password
+DROP TABLE IF EXISTS passwords;
 CREATE TABLE passwords (
   idpass SERIAL PRIMARY KEY,
   pass TEXT NOT NULL,
   updated timestamp with time zone not null default now()
 );
-create trigger change_password_updated_at before
-update on password for each row
+create trigger change_passwords_updated_at before
+update on passwords for each row
 execute function change_updated_at_column ();
 
+DROP TABLE IF EXISTS chats;
 CREATE TABLE chats (
   idchat SERIAL PRIMARY KEY,
   u1 BIGINT NOT NULL,
@@ -59,6 +62,7 @@ create trigger change_chat_updated_at before
 update on chats for each row
 execute function change_updated_at_column ();
 
+DROP TABLE IF EXISTS chat_text;
 CREATE TABLE chat_text (
   idchat_text SERIAL PRIMARY KEY,
   idchat BIGINT NOT NULL,
@@ -71,9 +75,10 @@ create trigger change_chat_text_updated_at before
 update on chat_text for each row
 execute function change_updated_at_column ();
 
+DROP TABLE IF EXISTS room;
 CREATE TABLE room (
   idroom SERIAL PRIMARY KEY,
-  uuid UUID DEFAULT uuid_generate_v4() UNIQUE NOT NULL,
+  uuid UUID DEFAULT gen_random_uuid() UNIQUE NOT NULL,
   name TEXT NOT NULL,
   rname TEXT UNIQUE NOT NULL,
   admin BIGINT NOT NULL,
@@ -87,12 +92,14 @@ create trigger change_room_updated_at before
 update on room for each row
 execute function change_updated_at_column ();
 
+DROP TABLE IF EXISTS members;
 CREATE TABLE members (
   idroom BIGINT NOT NULL,
   iduser BIGINT NOT NULL,
   created timestamp with time zone not null default now()
 );
 
+DROP TABLE IF EXISTS room_text;
 CREATE TABLE room_text (
   idroom_text SERIAL PRIMARY KEY,
   idroom BIGINT NOT NULL,

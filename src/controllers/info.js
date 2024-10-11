@@ -45,8 +45,10 @@ exports.me = async (req, res) => {
             .query('select uname from users where email = $1;', [email])
             .then((r) => {
               console.log(r);
-              
-              const { rows: [{uname}] } = r;
+
+              const {
+                rows: [{ uname }],
+              } = r;
               console.log({ uname });
               res.send({ user: { name, picture, email, sub, uname } });
             })
@@ -56,5 +58,7 @@ exports.me = async (req, res) => {
             });
         } else res.sendStatus(500);
       });
+  } else {
+    res.send({ user: req.oidc.user });
   }
 };
