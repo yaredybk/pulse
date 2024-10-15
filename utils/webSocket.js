@@ -1,79 +1,130 @@
-const { auth } = require('express-openid-connect');
-const ws_ = require('ws');
-const { _rdAuth } = require('./redis');
-const maxClients = 3;
+const ws_open = require('ws').OPEN;
+const ws_ = require('ws').Server;
+const {  _session } = require('./session');
+const { storeWSdata } = require('./storeWebSocketdata');
+// const { wss } = require('..');
+const maxClients = process.env.WS_LIMIT || 50;
+const timeOut_ms = process.env.WS_TIMEOUT || 5 * 60 * 1000;
 
-// fake temporary authenticate function
-function authenticate(req, cb = () => null) {
-  const sess = req.headers.cookie.match(/appSession=([^;]*);/);
-  if (sess) _rdAuth.get(sess[1], cb);
-  else cb(new Error('missing auth cookie.'));
-}
-function onSocketError(err) {
-  console.error('onSocketError\n', err);
-}
 function newWebSocket(server) {
-  const wss = new ws_.Server({ noServer: true });
-  server.on('upgrade', (request, socket, head) => {
-    socket.on('error', onSocketError);
-
-    authenticate(request, (err, client) => {
-      if (err || !client) {
-        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-        socket.destroy();
-        return;
-      }
-      socket.removeListener('error', onSocketError);
-
-      wss.handleUpgrade(request, socket, head, function done(ws) {
-        wss.emit('connection', ws, request, client.data.uuid);
-      });
-    });
-  });
-  // wss.on('headers', (headers, request) => {
-  // console.log(request.headers);
-  // console.log('headers');
-  // request.statusCode = 400;
-  // request.destroy(new Error('UnAuthorized'));
-  // });
-  wss.on('connection', (ws, rq, client) => {
-    if (wss.clients.size > maxClients) {
-      console.warn('WS maxed out:', wss.clients.size);
-      ws.send('Server is overloaded. Please try again later!');
-      ws.close();
+  const wss = new ws_({ noServer: true });
+  server.on('upgrade', async (request, socket, head) => {
+    function onSocketError(err) {
+      console.error('onSocketError\n', err);
+      socket.destroy();
     }
-
-    // ch(rq,rs,()=>null);
-    // console.warn('WSS\n',rq.oidc.user);
-    ws.send('wellcome to PULSE!');
-    ws.on('message', (message) => {
-      // if (message.length > 15)
-      //   ws.send('your name seems a bit long!\nuse between 4 and 15 characters');
-      // else if (message.length < 4)
-      //   ws.send('your name is to short!\nuse between 4 and 15 characters');
-      // else ws.send('Hello, ' + message);
-      wss.clients.forEach((c) => {
-        if (c.readyState === ws_.OPEN && c != ws) {
-          c.send(message.toString());
+    let upgraded = false;
+    await _session(
+      request,
+      () => null,
+      async () => {
+        if (upgraded) {
+          return console.warn('upgrad 2');
         }
-      });
-    });
-    const to = setTimeout(() => {
-      ws.send('Time out! \ngoodby!');
-      ws.close();
-    }, 1000 * 60 * 5);
-    ws.on('close', () => {
-      clearTimeout(to);
-    });
+        if (!request.session?.uuid) {
+          socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+          socket.destroy();
+          return;
+        }
+        socket.removeListener('error', onSocketError);
+        upgraded = true;
+        await wss.handleUpgrade(request, socket, head, function done(ws) {
+          wss.emit('connection', ws, request, request.session.uuid);
+        });
+      },
+    );
+    socket.on('error', onSocketError);
   });
+  async function onConnection(senderWS, rq, fromuuid) {
+    // console.warn('-C:', fromuuid.slice(0, 4), wss.clients.size);
+    senderWS.uuid = fromuuid;
+
+    function onMessage(message) {
+      onIdle();
+      message = message.toString();
+      let data = message;
+      let path, root, type, category, touuid;
+      if (message.startsWith('{') || message.startsWith('[')) {
+        try {
+          d = JSON.parse(message);
+          path = d.path;
+          data = d.data;
+          [root, type, category, touuid] = path.replace(/^\//, '').split('/');
+          path = [root, type, category, touuid, fromuuid].join('/');
+          let tmp_cl;
+          function cb(err, results) {
+            if (err) return console.warn(err);
+            const payLoad = {
+              path: `message/${type}/${category}/${touuid}/${fromuuid}`,
+              data: results,
+            };
+            let tmp = JSON.stringify(payLoad);
+            try {
+              senderWS.send(tmp);
+              tmp_cl && tmp_cl.send(tmp);
+            } catch (error) {
+              console.warn('unable to send back!\n', error);
+            }
+          }
+          if (touuid)
+            wss.clients.forEach((c) => {
+              if (
+                c.readyState === ws_open &&
+                touuid == c.uuid &&
+                c != senderWS
+              ) {
+                const tmp_ = JSON.stringify({ path, data });
+                tmp_cl = c;
+                c.send(tmp_);
+              }
+            });
+          storeWSdata(data, root, type, category, touuid, fromuuid, cb);
+        } catch (error) {
+          console.warn('parse error');
+          data = message;
+        }
+      } 
+      // else {
+      //   console.warn('NON_JSON M\n', message);
+      // }
+    }
+    if (!fromuuid) {
+      // console.warn('senderWS not authorized');
+      senderWS.send('NOT Authorized!');
+      senderWS.close();
+      return;
+    }
+    if (wss.clients.size > maxClients) {
+      // console.warn('senderWS maxed out:', wss.clients.size);
+      senderWS.send('Server is overloaded. Please try again later!');
+      senderWS.close();
+      return;
+    }
+    senderWS.send('welcome');
+    let time_ = 0;
+    function onIdle() {
+      if (time_) {
+        clearTimeout(time_);
+      }
+      time_ = setTimeout(() => {
+        senderWS.send('timeout');
+        senderWS.close();
+        // console.warn('- ws - TimeOUT!', wss.clients.size);
+      }, timeOut_ms);
+    }
+    onIdle();
+    senderWS.on('message', onMessage);
+    senderWS.on('close', () => {
+      clearTimeout(time_);
+      // console.warn('-X:', fromuuid.slice(0, 4), wss.clients.size);
+    });
+  }
+  wss.on('connection', onConnection);
   wss.on('error', (error) => {
     console.warn('wss error\n', error);
   });
-  wss.on('listening', () => {
-    console.log('- ws - listening');
-  });
   wss.on('close', () => {
-    console.warn('- ws - CLOSED!');
+    console.warn('- wss - CLOSED!');
   });
 }
 

@@ -7,11 +7,11 @@
 -- Create a new database called 'main'
 
 
--- update updated column in a table
+-- update updated_at column in a table
 CREATE OR REPLACE FUNCTION change_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
-  NEW.updated = now();
+  NEW.updated_at = now();
   RETURN NEW;
 END;
 $$ language 'plpgsql';
@@ -26,14 +26,15 @@ CREATE TABLE users (
   country TEXT NULL,
   city TEXT NULL,
   phone VARCHAR(20) UNIQUE NULL,
-  email TEXT NULL,
-  uname TEXT UNIQUE NOT NULL,
+  email TEXT UNIQUE NULL,
+  uname TEXT UNIQUE NULL,
   idpass bigint NULL,
   bio TEXT NULL,
   profile TEXT NULL,
   active SMALLINT NULL,
-  created timestamp with time zone not null default now(),
-  updated timestamp with time zone not null default now()
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  info jsonb null default '{}'::jsonb
 );
 create trigger change_users_updated_at before
 update on users for each row
@@ -44,7 +45,7 @@ DROP TABLE IF EXISTS passwords;
 CREATE TABLE passwords (
   idpass SERIAL PRIMARY KEY,
   pass TEXT NOT NULL,
-  updated timestamp with time zone not null default now()
+  updated_at timestamp with time zone not null default now()
 );
 create trigger change_passwords_updated_at before
 update on passwords for each row
@@ -53,10 +54,10 @@ execute function change_updated_at_column ();
 DROP TABLE IF EXISTS chats;
 CREATE TABLE chats (
   idchat SERIAL PRIMARY KEY,
-  u1 BIGINT NOT NULL,
-  u2 BIGINT NULL,
-  created timestamp with time zone not null default now(),
-  updated timestamp with time zone not null default now()
+  iduser1 BIGINT NOT NULL,
+  iduser2 BIGINT NULL,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now()
 );
 create trigger change_chat_updated_at before
 update on chats for each row
@@ -68,8 +69,8 @@ CREATE TABLE chat_text (
   idchat BIGINT NOT NULL,
   content TEXT NOT NULL,
   sender BIGINT NOT NULL,
-  created timestamp with time zone not null default now(),
-  updated timestamp with time zone not null default now()
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now()
 );
 create trigger change_chat_text_updated_at before
 update on chat_text for each row
@@ -85,8 +86,8 @@ CREATE TABLE room (
   bio TEXT NULL,
   profile TEXT NULL,
   active SMALLINT NULL,
-  created timestamp with time zone not null default now(),
-  updated timestamp with time zone not null default now()
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now()
 );
 create trigger change_room_updated_at before
 update on room for each row
@@ -96,7 +97,7 @@ DROP TABLE IF EXISTS members;
 CREATE TABLE members (
   idroom BIGINT NOT NULL,
   iduser BIGINT NOT NULL,
-  created timestamp with time zone not null default now()
+  created_at timestamp with time zone not null default now()
 );
 
 DROP TABLE IF EXISTS room_text;
@@ -105,8 +106,8 @@ CREATE TABLE room_text (
   idroom BIGINT NOT NULL,
   content TEXT NOT NULL,
   sender BIGINT NOT NULL,
-  created timestamp with time zone not null default now(),
-  updated timestamp with time zone not null default now()
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now()
 );
 create trigger change_room_text_updated_at before
 update on room_text for each row

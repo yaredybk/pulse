@@ -1,21 +1,18 @@
-const RedisStore = require('connect-redis').default;
 const session = require('express-session');
 require('dotenv').config();
-const { createClient } = require('redis');
+const { _rdCli } = require('./redis');
+const RedisStore = require('connect-redis').default;
 
-// Initialize client.
-let redisClient = createClient({ url: process.env.REDIS_URL });
-redisClient.connect().catch(console.error);
-redisClient.se;
 // Initialize store.
-let _rdSess = new RedisStore({
-  client: redisClient,
+let rdSess = new RedisStore({
+  client: _rdCli,
   prefix: 'myapp:',
 });
-
-// Initialize session storage.
-const ss = session({
-  store: _rdSess,
+// rdSess.ids((e, d) => {
+//   console.log(d);
+// });
+const ses = session({
+  store: rdSess,
   resave: false, // required: force lightweight session keep alive (touch)
   saveUninitialized: true, // Create session for new users
   secret: process.env.SESSION_KEY,
@@ -29,5 +26,4 @@ const ss = session({
   },
   name: 'anon',
 });
-
-module.exports = { _session: ss, _rdSess };
+module.exports = { _rdSess: rdSess, _session: ses };
