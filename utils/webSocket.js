@@ -7,50 +7,69 @@ const maxClients = process.env.WS_LIMIT || 50;
 const timeOut_ms = process.env.WS_TIMEOUT || 5 * 60 * 1000;
 
 function newWebSocket(server) {
+  console.log('starting WS');
   const wss = new ws_({ noServer: true });
+  console.log(typeof(wss));
   server.on('upgrade', async (request, socket, head) => {
+    console.log('-WS- onupgrade');
     function onSocketError(err) {
       console.error('onSocketError\n', err);
       socket.destroy();
     }
+    socket.on('error', onSocketError);
     let upgraded = false;
     await _session(
       request,
       () => null,
       async () => {
+        console.log('-WS- session check');
         if (upgraded) {
           return console.warn('upgrad 2');
         }
         if (!request.session?.uuid) {
+          console.log('-WS- no uuid on session');
+          console.log(request.headers.cookies);
           socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
           socket.destroy();
           return;
         }
         socket.removeListener('error', onSocketError);
         upgraded = true;
+        console.log('-WS- undle upgrade');
         await wss.handleUpgrade(request, socket, head, function done(ws) {
           wss.emit('connection', ws, request, request.session.uuid);
         });
       },
     );
-    socket.on('error', onSocketError);
   });
   async function onConnection(senderWS, rq, fromuuid) {
-    // console.warn('-C:', fromuuid.slice(0, 4), wss.clients.size);
+    function onIdle() {
+      if (time_) {
+        clearTimeout(time_);
+      }
+      time_ = setTimeout(() => {
+        senderWS.send('timeout');
+        senderWS.close();
+        // console.warn('- ws - TimeOUT!', wss.clients.size);
+      }, timeOut_ms);
+    }
+    console.warn('-C:', fromuuid.slice(0, 4), wss.clients.size);
     senderWS.uuid = fromuuid;
-
     function onMessage(message) {
       onIdle();
       message = message.toString();
+      console.log(message);
       let data = message;
       let path, root, type, category, touuid;
       if (message.startsWith('{') || message.startsWith('[')) {
+        console.log('-WS JSON message');
         try {
           d = JSON.parse(message);
           path = d.path;
           data = d.data;
           [root, type, category, touuid] = path.replace(/^\//, '').split('/');
           path = [root, type, category, touuid, fromuuid].join('/');
+          console.log('-WS pase complete');
           let tmp_cl;
           function cb(err, results) {
             if (err) return console.warn(err);
@@ -67,6 +86,7 @@ function newWebSocket(server) {
             }
           }
           if (touuid)
+            console.log('-WS sending to other WS');
             wss.clients.forEach((c) => {
               if (
                 c.readyState === ws_open &&
@@ -95,23 +115,14 @@ function newWebSocket(server) {
       return;
     }
     if (wss.clients.size > maxClients) {
-      // console.warn('senderWS maxed out:', wss.clients.size);
+      console.warn('senderWS maxed out:', wss.clients.size);
       senderWS.send('Server is overloaded. Please try again later!');
       senderWS.close();
       return;
     }
+    console.warn('welcome');
     senderWS.send('welcome');
     let time_ = 0;
-    function onIdle() {
-      if (time_) {
-        clearTimeout(time_);
-      }
-      time_ = setTimeout(() => {
-        senderWS.send('timeout');
-        senderWS.close();
-        // console.warn('- ws - TimeOUT!', wss.clients.size);
-      }, timeOut_ms);
-    }
     onIdle();
     senderWS.on('message', onMessage);
     senderWS.on('close', () => {

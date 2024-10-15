@@ -16,6 +16,8 @@ BEGIN
 END;
 $$ language 'plpgsql';
 -- USERS TABLE
+DROP TABLE IF EXISTS chat_private;
+DROP TABLE IF EXISTS contact_global;
 DROP TABLE IF EXISTS users;
 CREATE TABLE users (
   iduser SERIAL PRIMARY KEY,
