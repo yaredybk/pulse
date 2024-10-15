@@ -28,7 +28,7 @@ function newWebSocket(server) {
         }
         if (!request.session?.uuid) {
           console.log('-WS- no uuid on session');
-          console.log(request.headers.cookies);
+          console.log(request.headers.cookie);
           socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
           socket.destroy();
           return;

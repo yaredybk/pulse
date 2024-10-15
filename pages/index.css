@@ -1,0 +1,28 @@
+body{
+font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+  background-color: rgba(255, 255, 255, 0.5);
+  background-image: url('/a/favicon_bg.png');
+  background-size: contain;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-blend-mode: lighten;
+}
+.warning {
+  background-color: rgb(255, 134, 134);
+  border: solid 2px red;
+  padding: 5px 1rem;
+  color: darkred;
+}
+.home img {
+  height: 2.2rem;
+  vertical-align: text-bottom;
+  padding-inline: 1rem;
+}
+.home article {
+  text-align: left;
+  padding: 1rem;
+  font-size: larger;
+  font-weight: bold;
+  font-style: italic;
+}

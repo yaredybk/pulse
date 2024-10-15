@@ -85,6 +85,9 @@ exports.me = async (req, res) => {
       res.sendStatus(500);
     } else {
       req.session.uuid = data.uuid;
+      console.warn('saving uuid');
+      console.log(data.uuid);
+      
       req.session.save((err) => {
         if (err) console.warn(err);
       });

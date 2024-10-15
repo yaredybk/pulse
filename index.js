@@ -28,10 +28,10 @@ app.use(helmet());
 // STATIC ASSETS OTHER THAN /a
 app.use(express.static('pages'));
 app.use(_session);
-// app.use((r, rs, n) => {
-//   console.log('M', r.session.id, r.session.uuid);
-//   n();
-// });
+app.use((r, rs, n) => {
+  console.log('M', r.session.id, r.session.uuid);
+  n();
+});
 // app.use(
 //   session({
 //     store: _rdSess,
@@ -66,8 +66,8 @@ app.use(
 /** SIMPLE LOGING */
 // const logredis = require('connect-redis').default;
 // const _rdLog = new logredis({ client: _rdCli, prefix: 'log' });
-// app.use((r, rs, n) => {
-//   console.warn(r.url);
+app.use((r, rs, n) => {
+  console.warn(r.url);
 //   _rdLog.all((e, d) => {
 //     console.log(e);
 //     console.log(d);
@@ -76,8 +76,8 @@ app.use(
 //   _rdLog.set(new Date().toLocaleTimeString(), r.url, (e, d) => {
 //     if (e) console.warn(e);
 //   });
-//   n();
-// });
+  n();
+});
 
 /** AUTH0 */
 app.use(

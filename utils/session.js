@@ -13,14 +13,16 @@ let rdSess = new RedisStore({
 // });
 const ses = session({
   store: rdSess,
-  resave: false, // required: force lightweight session keep alive (touch)
+  resave: true, // required: force lightweight session keep alive (touch)
   saveUninitialized: true, // Create session for new users
   secret: process.env.SESSION_KEY,
   cookie: {
-    httpOnly: process.env.NODE_ENV == 'production',
+    httpOnly: true,
     path: '/',
-    secure: process.env.NODE_ENV == 'production',
-    sameSite: true,
+    // secure: process.env.NODE_ENV == 'production',
+    secure: false,
+    // sameSite: process.env.NODE_ENV == 'production',
+    sameSite: false,
     maxAge: 1000 * 60 * 10, // 10 minutes session timeout in milliseconds
     rolling: true, // Reset cookie expiry on every request
   },
