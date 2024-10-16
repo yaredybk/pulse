@@ -1,6 +1,7 @@
 const ws_open = require('ws').OPEN;
 const ws_ = require('ws').Server;
-const {  _session } = require('./session');
+const { _updateUser } = require('./db');
+const { _session } = require('./session');
 const { storeWSdata } = require('./storeWebSocketdata');
 // const { wss } = require('..');
 const maxClients = process.env.WS_LIMIT || 50;
@@ -91,7 +92,7 @@ function newWebSocket(server) {
           console.warn('parse error');
           data = message;
         }
-      } 
+      }
       // else {
       //   console.warn('NON_JSON M\n', message);
       // }
@@ -109,6 +110,7 @@ function newWebSocket(server) {
       return;
     }
     senderWS.send('welcome');
+    _updateUser({ uuid:fromuuid, active: 1 });
     let time_ = 0;
     onIdle();
     senderWS.on('message', onMessage);

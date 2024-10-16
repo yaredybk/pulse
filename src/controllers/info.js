@@ -1,18 +1,7 @@
 const express = require('express');
-const { _db, _upsertUser, _checkUser } = require('../../utils/db');
+const { _db, _upsertUser, _checkUser, _updateUser } = require('../../utils/db');
 const { _rdAuth } = require('../../utils/auth0');
-// {
-//   sid: 'DgzKxUAn9pmbcU5Ucdy00xwMo-b8kxFL',
-//   given_name: 'Yared',
-//   family_name: 'Bekuru',
-//   nickname: 'yb12ybk',
-//   name: 'Yared Bekuru',
-//   picture: 'https://lh3.googleusercontent.com/a/ACg8ocKx4VPyo_5Ubwps9eE10j2_WYi6pVfVF-3dUTboYfxQXpa0QND6=s96-c',
-//   updated_at: '2024-10-10T20:23:48.468Z',
-//   email: 'yb12ybk@gmail.com',
-//   email_verified: true,
-//   sub: 'google-oauth2|107373298007112761050'
-// }
+
 /**
  *
  * @param {express.Request} req
@@ -21,14 +10,14 @@ const { _rdAuth } = require('../../utils/auth0');
  */
 exports.user = async (req, res) => {
   const { uuid } = req.params;
-  if (!uuid) res.sendStatus(400);
+  if (!uuid || uuid.length != 36) return res.sendStatus(400);
   _db
     .query(`select uuid, name, profile, email from users where uuid = $1`, [
       uuid,
     ])
-    .then(({ rows: [user] }) => {
-      if (!user) return res.sendStatus(404);
-      return res.send(user);
+    .then(({ err, rows }) => {
+      if (err) res.sendStatus(404);
+      else res.send(rows[0]);
     })
     .catch((e) => {
       console.warn(e);
@@ -114,4 +103,41 @@ exports.me = async (req, res) => {
       },
     });
   })();
+};
+/**
+ *
+ * @param {express.Request} req
+ * @param {express.Response} res
+ * @returns
+ */
+exports.editMe = async (req, res) => {
+  const { callback } = req.query;
+  const keys = [
+    'name',
+    'uname',
+    'bio',
+    'city',
+    'country',
+    'gender',
+    'name',
+    'uname',
+  ];
+  const uuid = req.session.uuid;
+  let data_ = { uuid };
+  keys.forEach((k) => {
+    const val = req.body[k];
+    if (val) data_[k] = val;
+  });
+  if (data_.gender && data_.gender.length > 1) return res.sendStatus(400);
+  const { err, data } = await _updateUser(data_).catch(console.trace);
+  if (err) {
+    console.warn(err);
+    return res.sendStatus(500);
+  }
+  req.session.save((err) => err && console.warn(err));
+  data_ = { ...data, ...data_ };
+
+  res.send({
+    user: data,
+  });
 };

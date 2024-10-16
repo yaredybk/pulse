@@ -8,21 +8,19 @@ class _pg {
   }
 
   /**
-   *
-   * @param  {...any} args arguments
-   * @returns {Promise<{rows:Array}>}
+   * @param  {...any} args - Arguments
+   * @returns {Promise<{err,rows:Array}>}
    */
   async query(...args) {
-    return new Promise((rs, rj) =>
-      this.pool.connect().then((c) => {
-        c.query(...args)
-          .then((...r) => {
-            c.release();
-            rs(...r);
-          })
-          .catch(rj);
-      }),
-    );
+    const client = await this.pool.connect();
+    try {
+      const {rows} = await client.query(...args);
+      return {rows};
+    } catch (err) {
+      return { err };
+    } finally {
+      client.release();
+    }
   }
 }
 const config = {
@@ -34,6 +32,44 @@ const config = {
 };
 const _db = new _pg(config);
 
+/**
+ *
+ * @param {{iduser: number,uuid: string,name: string,gender: string,birth: string,country: string,city: string,phone: string,email: string,uname: string,idpass: number,bio: string,profile: string,active:number,created_at : string,updated_at : string,info:object}} user
+ * @returns {Promise<{err, data:{iduser: number,uuid: string,name: string,gender: string,birth: string,country: string,city: string,phone: string,email: string,uname: string,idpass: number,bio: string,profile: string,active:number,created_at : string,updated_at : string,info:object}}>}
+ */
+async function _updateUser(user) {
+  const uniqueKeys = ['iduser', 'uuid', 'email', 'phone', 'uname'];
+  const key = uniqueKeys.find((uk) => Object.hasOwn(user, uk));
+  if (!key) return { err: 'no unique key found.' };
+  const value = user[key];
+
+  try {
+    const s = await _db.pool.connect();
+    let query = '';
+    let values = [];
+    delete user[key];
+    let keys = Object.keys(user);
+    if (keys.length == 0) {
+      s.release();
+      return { err: 'nodata' };
+    }
+    keys = keys.map((k, ind) => ` ${k} =  $${ind + 2}`).join(', ');
+    values = [value, ...Object.values(user)];
+    query = `update users set ${keys} where ${key} = $1 `;
+    await s.query(query, values);
+    const {
+      rows: [result],
+    } = await s.query(
+      `select active, bio, city, country, email, gender, name, profile, uuid from users where ${key} = $1;`,
+      [value],
+    );
+    await s.release();
+    return { err: null, data: { ...user, ...result } };
+  } catch (err) {
+    // console.warn(err);
+    return { err };
+  }
+}
 /**
  *
  * @param {{iduser: number,uuid: string,name: string,gender: string,birth: string,country: string,city: string,phone: string,email: string,uname: string,idpass: number,bio: string,profile: string,active:number,created_at : string,updated_at : string,info:object}} user
@@ -56,7 +92,7 @@ async function _upsertUser(user) {
       // remove key, as it will be used in where clause
       delete user[key];
       let keys = Object.keys(user);
-      if (keys.length == 1) {
+      if (keys.length == 0) {
         s.release();
         return { err: null, data: { ...user, ...result } };
       }
@@ -130,3 +166,4 @@ module.exports._db = _db;
 module.exports._upsertUser = _upsertUser;
 module.exports._getUserIDs = getUserIDs;
 module.exports._checkUser = _checkUser;
+module.exports._updateUser = _updateUser;

@@ -58,10 +58,11 @@ exports.chat_nav = async (req, res) => {
    */
   const { category } = req.params;
   const uuid = req.session.uuid;
+  
   try {
     const [iduser] = await _getUserIDs([uuid]);
     let { rows } = await _db.query(
-      `SELECT  c.idchat,c.count, u.name , u.uuid , u.email ,u.profile, c.created_at, c.updated_at \
+      `SELECT  c.idchat,c.count, u.name , u.uuid , u.email ,u.profile, u.active, c.created_at, c.updated_at \
      FROM (select idchat,count, created_at, updated_at, (case when iduser1 = $1 then iduser2 else iduser1 end) as \
      iduser from chats WHERE iduser1 = $1 or iduser2 = $1) as c JOIN users u ON (c.iduser = u.iduser) \
      order by  updated_at desc ;`,
