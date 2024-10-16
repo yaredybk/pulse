@@ -16,8 +16,8 @@ BEGIN
 END;
 $$ language 'plpgsql';
 -- USERS TABLE
-DROP TABLE IF EXISTS chat_private;
-DROP TABLE IF EXISTS contact_global;
+DROP VIEW IF EXISTS chat_private;
+DROP VIEW IF EXISTS contact_global;	
 DROP TABLE IF EXISTS users;
 CREATE TABLE users (
   iduser SERIAL PRIMARY KEY,
@@ -58,12 +58,26 @@ CREATE TABLE chats (
   idchat SERIAL PRIMARY KEY,
   iduser1 BIGINT NOT NULL,
   iduser2 BIGINT NULL,
+  count bigint DEFAULT 0,
   created_at timestamp with time zone not null default now(),
   updated_at timestamp with time zone not null default now()
 );
 create trigger change_chat_updated_at before
 update on chats for each row
 execute function change_updated_at_column ();
+
+-- increment count column on insert
+CREATE OR REPLACE FUNCTION increment_count_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  OLD.count := COALESCE(OLD.count, 0) + 1;
+  RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+create trigger increment_chat_count_column BEFORE
+insert on chats for each row
+execute function increment_count_column ();
 
 DROP TABLE IF EXISTS chat_text;
 CREATE TABLE chat_text (
@@ -77,6 +91,8 @@ CREATE TABLE chat_text (
 create trigger change_chat_text_updated_at before
 update on chat_text for each row
 execute function change_updated_at_column ();
+
+
 
 DROP TABLE IF EXISTS room;
 CREATE TABLE room (

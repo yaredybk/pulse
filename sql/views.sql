@@ -19,7 +19,7 @@ JOIN
 LEFT JOIN 
     users u2 ON c.iduser2 = u2.iduser;
 
--- contact global list
+-- contact public list
 CREATE OR REPLACE VIEW contact_global AS
 SELECT 
   uuid,

@@ -10,7 +10,7 @@ const { _db, _upsertUser, _getUserIDs } = require('../../utils/db');
  */
 exports.chat_content = async (req, res) => {
   /**
-   * @type {{category: 'private' | 'room' | 'global' | 'me'}}
+   * @type {{category: 'private' | 'room' | 'public' | 'me'}}
    */
   const { category, uuid } = req.params;
   const uuid2 = req.session.uuid;
@@ -31,10 +31,10 @@ exports.chat_content = async (req, res) => {
     let chat = rows[0];
     if (!chat) return res.send([]);
     let r_ = await pool_.query(
-      `select idchat_text,content, created_at, updated_at, \
+      `select * from (select idchat_text,content, created_at, updated_at, \
       (case when sender = $1 then $2 else $3 end) as uuid \
       from chat_text \
-      WHERE idchat = $4`,
+      WHERE idchat = $4 order by  idchat_text desc limit 50) as tmp order by idchat_text asc`,
       [iduser1, uuid, uuid2, chat.idchat],
     );
     pool_.release();
@@ -54,16 +54,17 @@ exports.chat_content = async (req, res) => {
  */
 exports.chat_nav = async (req, res) => {
   /**
-   * @type {{category: 'private' | 'room' | 'global' | 'me'}}
+   * @type {{category: 'private' | 'room' | 'public' | 'me'}}
    */
   const { category } = req.params;
   const uuid = req.session.uuid;
   try {
     const [iduser] = await _getUserIDs([uuid]);
     let { rows } = await _db.query(
-      `SELECT  c.idchat, u.name , u.uuid , u.email ,u.profile, c.created_at, c.updated_at \
-     FROM (select idchat, created_at, updated_at, (case when iduser1 = $1 then iduser2 else iduser1 end) as \
-     iduser from chats WHERE iduser1 = $1 or iduser2 = $1) as c JOIN users u ON (c.iduser = u.iduser) \;`,
+      `SELECT  c.idchat,c.count, u.name , u.uuid , u.email ,u.profile, c.created_at, c.updated_at \
+     FROM (select idchat,count, created_at, updated_at, (case when iduser1 = $1 then iduser2 else iduser1 end) as \
+     iduser from chats WHERE iduser1 = $1 or iduser2 = $1) as c JOIN users u ON (c.iduser = u.iduser) \
+     order by  updated_at desc ;`,
       [iduser],
     );
 
@@ -81,7 +82,7 @@ exports.chat_nav = async (req, res) => {
  */
 exports.contacts_nav = async (req, res) => {
   /**
-   * @type {{category: 'private' | 'room' | 'global' | 'me'}}
+   * @type {{category: 'private' | 'room' | 'public' | 'me'}}
    */
   const { category } = req.params;
   const uuid = req.session.uuid;

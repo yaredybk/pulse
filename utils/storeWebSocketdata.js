@@ -6,7 +6,7 @@ const typeDef = require('../sql/typeDef.js');
  * @param {string} data message data
  * @param {string} root root path like /api
  * @param {'chat' | 'contact' | 'search'} type data type [chat, contact, search]
- * @param {'private' | 'room' | 'global'} category privacy indicator like [private, room, global]
+ * @param {'private' | 'room' | 'public'} category privacy indicator like [private, room, public]
  * @param {string} touuid receiver uuid
  * @param {string} fromuuid sender uuid
  * @param {Function} cb callback function
@@ -35,7 +35,7 @@ function storeWSdata(
 /**
  * process all chats transmitted over websocket
  * @param {string} data message data
- * @param {'private' | 'room' | 'global'} category privacy indicator like [private, room, global]
+ * @param {'private' | 'room' | 'public'} category privacy indicator like [private, room, public]
  * @param {string} touuid receiver uuid
  * @param {string} fromuuid sender uuid
  * @param {Function} cb callback function

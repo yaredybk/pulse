@@ -1,5 +1,5 @@
 const express = require('express');
-const { _db, _upsertUser } = require('../../utils/db');
+const { _db, _upsertUser, _checkUser } = require('../../utils/db');
 const { _rdAuth } = require('../../utils/auth0');
 // {
 //   sid: 'DgzKxUAn9pmbcU5Ucdy00xwMo-b8kxFL',
@@ -45,7 +45,7 @@ exports.me = async (req, res) => {
   const { callback } = req.query;
   if (!req.oidc.user) return res.sendStatus(401);
   let { name, picture: profile, email, ...info } = req.oidc.user || {};
-
+  let data_ = { name, picture: profile, email, ...info };
   if (callback == 'login') {
     const { err, data } = await _upsertUser({
       name,
@@ -56,24 +56,16 @@ exports.me = async (req, res) => {
     }).catch(console.trace);
     if (err) {
       console.warn(err);
-      res.sendStatus(500);
+      return res.sendStatus(500);
     } else {
       req.session.uuid = data.uuid;
       req.session.save((err) => {
         if (err) console.warn(err);
       });
-      res.send({
-        user: {
-          name: data.name,
-          profile: data.profile,
-          email: data.email,
-          uname: data.uname,
-          uuid: data.uuid,
-        },
-      });
+      data_ = { ...data, ...data_ };
     }
   } else {
-    const { err, data } = await _upsertUser({
+    let { err, data } = await _checkUser({
       name,
       // uname: name.replaceAll(' ', '_'), // // let users pick uname after signup
       email,
@@ -82,16 +74,44 @@ exports.me = async (req, res) => {
     });
     if (err) {
       console.log(err);
-      res.sendStatus(500);
+      const { err: e2, data: d2 } = await _upsertUser({
+        name,
+        // uname: name.replaceAll(' ', '_'), // // let users pick uname after signup
+        email,
+        profile,
+        info,
+      });
+      if (e2) return res.sendStatus(500);
+      else {
+        data = d2;
+        req.session.uuid = data.uuid;
+        req.session.save((err) => {
+          if (err) console.warn(err);
+        });
+      }
     } else {
       req.session.uuid = data.uuid;
-      console.warn('saving uuid');
-      console.log(data.uuid);
-      
       req.session.save((err) => {
         if (err) console.warn(err);
       });
-      res.send({ user: { ...req.oidc.user, ...data } });
+      data_ = { ...data, ...data_ };
     }
   }
+  (() => {
+    let { active, bio, city, country, email, gender, name, profile, uuid } =
+      data_;
+    res.send({
+      user: {
+        active,
+        bio,
+        city,
+        country,
+        email,
+        gender,
+        name,
+        profile,
+        uuid,
+      },
+    });
+  })();
 };

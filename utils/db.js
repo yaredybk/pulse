@@ -80,6 +80,29 @@ async function _upsertUser(user) {
     return { err };
   }
 }
+/**
+ *
+ * @param {{iduser: number,uuid: string,name: string,gender: string,birth: string,country: string,city: string,phone: string,email: string,uname: string,idpass: number,bio: string,profile: string,active:number,created_at : string,updated_at : string,info:object}} user
+ * @returns {Promise<{err, data:{iduser: number,uuid: string,name: string,gender: string,birth: string,country: string,city: string,phone: string,email: string,uname: string,idpass: number,bio: string,profile: string,active:number,created_at : string,updated_at : string,info:object}}>}
+ */
+async function _checkUser(user) {
+  const uniqueKeys = ['iduser', 'uuid', 'email', 'phone', 'uname'];
+  const key = uniqueKeys.find((uk) => Object.hasOwn(user, uk));
+  if (!key) return { err: 'no unique key found.' };
+  const value = user[key];
+  try {
+    const s = await _db.pool.connect();
+    const {
+      rows: [result],
+    } = await s.query(`select * from users where ${key} = $1;`, [value]);
+    if (result) {
+      s.release();
+      return { err: null, data: { ...user, ...result } };
+    } else return { err: 'not found' };
+  } catch (err) {
+    return { err };
+  }
+}
 
 /**
  * @param {Array<string>} uuids user uuids
@@ -106,3 +129,4 @@ async function getUserIDs(uuids = [], pool) {
 module.exports._db = _db;
 module.exports._upsertUser = _upsertUser;
 module.exports._getUserIDs = getUserIDs;
+module.exports._checkUser = _checkUser;

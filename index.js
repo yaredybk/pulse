@@ -28,10 +28,10 @@ app.use(helmet());
 // STATIC ASSETS OTHER THAN /a
 app.use(express.static('pages'));
 app.use(_session);
-app.use((r, rs, n) => {
-  console.log('M', r.session.id, r.session.uuid);
-  n();
-});
+// app.use((r, rs, n) => {
+//   console.log('M', r.session.id, r.session.uuid);
+//   n();
+// });
 // app.use(
 //   session({
 //     store: _rdSess,
@@ -66,18 +66,18 @@ app.use(
 /** SIMPLE LOGING */
 // const logredis = require('connect-redis').default;
 // const _rdLog = new logredis({ client: _rdCli, prefix: 'log' });
-app.use((r, rs, n) => {
-  console.warn(r.url);
-//   _rdLog.all((e, d) => {
-//     console.log(e);
-//     console.log(d);
-//   });
-//   _rdLog.clear();
-//   _rdLog.set(new Date().toLocaleTimeString(), r.url, (e, d) => {
-//     if (e) console.warn(e);
-//   });
-  n();
-});
+// app.use((r, rs, n) => {
+//   console.warn(r.url);
+// //   _rdLog.all((e, d) => {
+// //     console.log(e);
+// //     console.log(d);
+// //   });
+// //   _rdLog.clear();
+// //   _rdLog.set(new Date().toLocaleTimeString(), r.url, (e, d) => {
+// //     if (e) console.warn(e);
+// //   });
+//   n();
+// });
 
 /** AUTH0 */
 app.use(
@@ -130,36 +130,36 @@ app.use(
   }),
 );
 app.get('/api/login', (req, res) => {
-  const origin =
-    process.env.NODE_ENV == 'development'
-      ? new URL(req.headers.referer || req.headers.host).origin
-      : process.env.AUTH0_AUDIENCE;
+  // const origin =
+  //   process.env.NODE_ENV == 'development'
+  //     ? new URL(req.headers.referer || req.headers.host).origin
+  //     : process.env.AUTH0_AUDIENCE;
   return res.oidc.login({
-    returnTo: origin + '/a/me?callback=login',
+    returnTo: process.env.AUTH0_AUDIENCE + '/a/me?callback=login',
     authorizationParams: {
-      redirect_uri: origin + '/api/profile/callback',
+      redirect_uri: process.env.AUTH0_AUDIENCE + '/api/profile/callback',
     },
   });
 });
 app.get('/api/logout', (req, res) => {
-  const origin =
-    process.env.NODE_ENV == 'development'
-      ? new URL(req.headers.referer || req.headers.host).origin
-      : process.env.AUTH0_AUDIENCE;
+  // const origin =
+  //   process.env.NODE_ENV == 'development'
+  //     ? new URL(req.headers.referer || req.headers.host).origin
+  //     : process.env.AUTH0_AUDIENCE;
   return res.oidc.logout({
-    returnTo: origin,
+    returnTo: process.env.AUTH0_AUDIENCE,
     authorizationParams: {
-      redirect_uri: origin + '/a/me?callback=logout',
+      redirect_uri: process.env.AUTH0_AUDIENCE + '/a/me?callback=logout',
     },
   });
 });
 app.get('/api/profile/callback', async (req, res) => {
-  const origin =
-    process.env.NODE_ENV == 'development'
-      ? new URL(req.headers.referer || req.headers.host).origin
-      : process.env.AUTH0_AUDIENCE;
+  // const origin =
+  //   process.env.NODE_ENV == 'development'
+  //     ? new URL(req.headers.referer || req.headers.host).origin
+  //     : process.env.AUTH0_AUDIENCE;
   return res.oidc.callback({
-    redirectUri: origin + '/api/profile/callback',
+    redirectUri: process.env.AUTH0_AUDIENCE + '/api/profile/callback',
   });
 });
 app.post(
@@ -167,12 +167,8 @@ app.post(
   express.urlencoded({ extended: false }),
   async (req, res) => {
     // console.log(req.headers.referer, req.headers.host);
-    const origin =
-      process.env.NODE_ENV == 'development'
-        ? new URL(req.headers.referer || req.headers.host).origin
-        : process.env.AUTH0_AUDIENCE;
     return res.oidc.callback({
-      redirectUri: origin + '/api/profile/callback',
+      redirectUri: process.env.AUTH0_AUDIENCE + '/api/profile/callback',
     });
   },
 );
