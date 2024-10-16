@@ -44,7 +44,7 @@ function newWebSocket(server) {
       time_ = setTimeout(() => {
         senderWS.send('timeout');
         senderWS.close();
-        // console.warn('- ws - TimeOUT!', wss.clients.size);
+      _updateUser({ uuid:fromuuid, active: 0 });
       }, timeOut_ms);
     }
     senderWS.uuid = fromuuid;
@@ -116,16 +116,14 @@ function newWebSocket(server) {
     senderWS.on('message', onMessage);
     senderWS.on('close', () => {
       clearTimeout(time_);
-      // console.warn('-X:', fromuuid.slice(0, 4), wss.clients.size);
+      _updateUser({ uuid:fromuuid, active: 0 });
     });
   }
   wss.on('connection', onConnection);
   wss.on('error', (error) => {
     console.warn('wss error\n', error);
   });
-  wss.on('close', () => {
-    console.warn('- wss - CLOSED!');
-  });
+  wss.on('close', () => _updateUser({ uuid:fromuuid, active: 0 }));
 }
 
 module.exports.newWebSocket = newWebSocket;
