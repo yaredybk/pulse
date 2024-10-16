@@ -13,20 +13,33 @@ const { _rdCli } = require('./utils/redis.js');
 const app = express();
 app.set('env', process.env.NODE_ENV || 'production');
 
-// helmet.contentSecurityPolicy({
-//   useDefaults: true,
-//   directives: {
-//     'img-src': [
-//       "'self'",
-//       'https://s.gravatar.com',
-//       'https://i1.wp.com/cdn.auth0.com',
-//       'https://lh3.googleusercontent.com',
-//     ],
-//   },
-// });
+// Use Helmet for security headers
 app.use(helmet());
+// Configure Helmet's contentSecurityPolicy
+app.use(
+  helmet.contentSecurityPolicy({
+    useDefaults: true,
+    directives: {
+      'img-src': [
+        "'self'",
+        'https://lh3.googleusercontent.com',
+        'https://s.gravatar.com',
+        'https://i1.wp.com/cdn.auth0.com',
+      ],
+    },
+  }),
+);
 // STATIC ASSETS OTHER THAN /a
 app.use(express.static('pages'));
+// STATIC ASSETS OF THE APP
+app.use('/a/', express.static('a', { fallthrough: true, redirect: false }));
+app.get('/a/*', (req, res) => {
+  if (path.extname(req.path)) res.sendStatus(404);
+  else if (req.accepts('html'))
+    res.sendFile(path.join(__dirname, './a/index.html'));
+  else res.sendStatus(404);
+});
+
 app.use(_session);
 // app.use((r, rs, n) => {
 //   console.log('M', r.session.id, r.session.uuid);
@@ -49,20 +62,7 @@ app.use(_session);
 //     name: 'anon',
 //   }),
 // );
-// helmet.contentSecurityPolicy
-app.use(
-  helmet.contentSecurityPolicy({
-    useDefaults: true,
-    directives: {
-      'img-src': [
-        "'self'",
-        'https://lh3.googleusercontent.com',
-        'https://s.gravatar.com',
-        'https://i1.wp.com/cdn.auth0.com',
-      ],
-    },
-  }),
-);
+
 /** SIMPLE LOGING */
 // const logredis = require('connect-redis').default;
 // const _rdLog = new logredis({ client: _rdCli, prefix: 'log' });
@@ -176,11 +176,7 @@ app.post(
 app.get('/api/protected', (rq, rs) => {
   rs.send({ status: 'you are authenticated!', user: rq.oidc.user });
 });
-// STATIC ASSETS OF THE APP
-app.use('/a', express.static('a', { fallthrough: true }));
-app.get('/a/*', (_, res) => {
-  res.sendFile(path.join(__dirname, './a/index.html'));
-});
+
 app.use(express.json());
 app.use('/api/list', requiresAuth(), require('./src/routes/list_routs.js'));
 app.use('/api', require('./src/routes/api_routes.js'));
