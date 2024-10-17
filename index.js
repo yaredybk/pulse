@@ -5,10 +5,9 @@ const { auth, requiresAuth } = require('express-openid-connect');
 const helmet = require('helmet');
 const { _rdAuth } = require('./utils/auth0.js');
 const jwt = require('jsonwebtoken');
-const { _db, _upsertUser } = require('./utils/db.js');
+const { _upsertUser } = require('./utils/db.js');
 const { _session } = require('./utils/session.js');
 const { newWebSocket } = require('./utils/webSocket.js');
-const { _rdCli } = require('./utils/redis.js');
 
 const app = express();
 app.set('env', process.env.NODE_ENV || 'production');
@@ -32,7 +31,7 @@ app.use(
 // STATIC ASSETS OTHER THAN /a
 app.use(express.static('pages'));
 // STATIC ASSETS OF THE APP
-app.use('/a/', express.static('a', { fallthrough: true, redirect: false }));
+app.use('/a', express.static('a', { fallthrough: true, redirect: true }));
 app.get('/a/*', (req, res) => {
   if (path.extname(req.path)) res.sendStatus(404);
   else if (req.accepts('html'))
