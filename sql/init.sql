@@ -130,3 +130,16 @@ CREATE TABLE room_text (
 create trigger change_room_text_updated_at before
 update on room_text for each row
 execute function change_updated_at_column ();
+
+
+DROP TABLE IF EXISTS profiles;
+CREATE TABLE profiles (
+    uuid UUID NOT NULL,
+    type TEXT NOT NULL,
+    delete_url TEXT NULL,
+    display_url TEXT NOT NULL,
+    thumb_url TEXT NULL,
+    created_at timestamp with time zone not null default now()
+);
+
+

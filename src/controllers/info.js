@@ -1,6 +1,7 @@
 const express = require('express');
 const { _db, _upsertUser, _checkUser, _updateUser } = require('../../utils/db');
 const { _rdAuth } = require('../../utils/auth0');
+const { _uploadImage } = require('../../utils/api_imgbb');
 
 /**
  *
@@ -128,6 +129,40 @@ exports.editMe = async (req, res) => {
     const val = req.body[k];
     if (val) data_[k] = val;
   });
+  if (req.files) {
+    
+    // if (!req.files) return res.status(400).send('No files were uploaded.');
+    const uploadedFile = req.files.image;
+    console.log(uploadedFile);
+    const {
+      err,
+      data: { display_url, ...data },
+    } = await _uploadImage(uploadedFile);
+    if (err) return res.sendStatus(500);
+    const pool_ = await _db.pool.connect();
+    try {
+      const {
+        rows: [{ profile, info }],
+      } = await pool_.query(`select profile, info from users where uuid = $1`, [
+        uuid,
+      ]);
+      await pool_.query(
+        `update users set profile = $1, info = $2 where uuid = $3`,
+        [display_url, { ...info, ...data }, uuid],
+      );
+      await pool_.query(
+        `insert into profiles (uuid,delete_url,display_url,thumb_url,type) \
+        values ($1,$2,$3,$4, 'user') ;`,
+        [uuid, info.delete_url, profile, info.thumb_url],
+      );
+      return res.send({ user: { profile: display_url } });
+    } catch (err) {
+      console.warn(err);
+      return res.sendStatus(500);
+    } finally {
+      pool_.release();
+    }
+  }
   if (data_.gender && data_.gender.length > 1) return res.sendStatus(400);
   const { err, data } = await _updateUser(data_).catch(console.trace);
   if (err) {

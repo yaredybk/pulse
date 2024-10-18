@@ -1,3 +1,4 @@
+const fileUpload = require('express-fileupload');
 require('dotenv').config();
 const path = require('path');
 const express = require('express');
@@ -23,6 +24,7 @@ app.use(
         "'self'",
         'https://lh3.googleusercontent.com',
         'https://s.gravatar.com',
+        '',
         'https://i1.wp.com/cdn.auth0.com',
       ],
     },
@@ -40,27 +42,6 @@ app.get('/a/*', (req, res) => {
 });
 
 app.use(_session);
-// app.use((r, rs, n) => {
-//   console.log('M', r.session.id, r.session.uuid);
-//   n();
-// });
-// app.use(
-//   session({
-//     store: _rdSess,
-//     resave: false, // required: force lightweight session keep alive (touch)
-//     saveUninitialized: true, // Create session for new users
-//     secret: process.env.SESSION_KEY,
-//     cookie: {
-//       httpOnly: process.env.NODE_ENV == 'production',
-//       path: '/',
-//       secure: process.env.NODE_ENV == 'production',
-//       sameSite: true,
-//       maxAge: 1000 * 60 * 10, // 10 minutes session timeout in milliseconds
-//       rolling: true, // Reset cookie expiry on every request
-//     },
-//     name: 'anon',
-//   }),
-// );
 
 /** SIMPLE LOGING */
 // const logredis = require('connect-redis').default;
