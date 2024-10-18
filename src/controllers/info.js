@@ -130,10 +130,7 @@ exports.editMe = async (req, res) => {
     if (val) data_[k] = val;
   });
   if (req.files) {
-    
-    // if (!req.files) return res.status(400).send('No files were uploaded.');
     const uploadedFile = req.files.image;
-    console.log(uploadedFile);
     const {
       err,
       data: { display_url, ...data },

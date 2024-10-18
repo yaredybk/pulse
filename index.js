@@ -24,7 +24,7 @@ app.use(
         "'self'",
         'https://lh3.googleusercontent.com',
         'https://s.gravatar.com',
-        '',
+        'https://i.ibb.co',
         'https://i1.wp.com/cdn.auth0.com',
       ],
     },

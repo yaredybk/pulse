@@ -84,7 +84,6 @@ const imgbb_url = `https://api.imgbb.com/1/upload?key=${process.env.IMGBB_KEY}`;
  * @returns {Promise<{ err:any, data: { delete_url:string, display_url:string, thumb_url:string } }>}
  */
 async function _uploadImage(imageFile) {
-  console.log(imageFile);
   const fileBlob = new Blob([imageFile.data], {
     type: imageFile.mimetype,
   });
@@ -95,13 +94,11 @@ async function _uploadImage(imageFile) {
       method: 'POST',
       body: f,
     });
-    console.log(res);
     if (!res || !res.ok) throw new Error('failed to upload');
     /**
      * @type {ApiResponse}
      */
     const data_ = await res.json();
-    console.log(data_);
     if (!data_.success) throw new Error('failed to upload');
     const {
       delete_url,
@@ -109,7 +106,6 @@ async function _uploadImage(imageFile) {
       thumb: { url: thumb_url },
     } = data_?.data;
 
-    console.log({ delete_url, display_url, thumb_url });
     return {
       err: null,
       data: { delete_url, display_url, thumb_url },
