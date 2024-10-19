@@ -10,9 +10,8 @@ const apiRoutes = express.Router();
 
 apiRoutes
   .route('/info/me')
-  .get(requiresAuth(), info.me)
+  .get(info.me)
   .post(
-    requiresAuth(),
     fileUpload({
       abortOnLimit: true,
       limits: { fileSize: 20 * 1024 * 1024 }, // Limit file size to 20MB (optional)
@@ -20,7 +19,18 @@ apiRoutes
     }),
     info.editMe,
   );
-apiRoutes.route('/info/user/:uuid').get(requiresAuth(), info.user);
+apiRoutes
+  .route('/info/room')
+  // .get(info.me)
+  .post(
+    fileUpload({
+      abortOnLimit: true,
+      limits: { fileSize: 20 * 1024 * 1024 }, // Limit file size to 20MB (optional)
+      // useTempFiles: true, // Enable temporary file storage (optional)
+    }),
+    info.newwRoom,
+  );
+apiRoutes.route('/info/user/:uuid').get(info.user);
 // apiRoutes.route('/info/user/:uuid').get(info.user);
 
 module.exports = apiRoutes;

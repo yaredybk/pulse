@@ -14,10 +14,9 @@ class _pg {
   async query(...args) {
     const client = await this.pool.connect();
     try {
-      const {rows} = await client.query(...args);
-      return {rows};
+      return await client.query(...args);
     } catch (err) {
-      return { err };
+      return { err,rows:[] };
     } finally {
       client.release();
     }
@@ -37,7 +36,7 @@ const _db = new _pg(config);
  * @param {{iduser: number,uuid: string,name: string,gender: string,birth: string,country: string,city: string,phone: string,email: string,uname: string,idpass: number,bio: string,profile: string,active:number,created_at : string,updated_at : string,info:object}} user
  * @returns {Promise<{err, data:{iduser: number,uuid: string,name: string,gender: string,birth: string,country: string,city: string,phone: string,email: string,uname: string,idpass: number,bio: string,profile: string,active:number,created_at : string,updated_at : string,info:object}}>}
  */
-async function _updateUser(user) {
+async function updateUser(user) {
   const uniqueKeys = ['iduser', 'uuid', 'email', 'phone', 'uname'];
   const key = uniqueKeys.find((uk) => Object.hasOwn(user, uk));
   if (!key) return { err: 'no unique key found.' };
@@ -73,9 +72,10 @@ async function _updateUser(user) {
 /**
  *
  * @param {{iduser: number,uuid: string,name: string,gender: string,birth: string,country: string,city: string,phone: string,email: string,uname: string,idpass: number,bio: string,profile: string,active:number,created_at : string,updated_at : string,info:object}} user
- * @returns {Promise<{err, data:{iduser: number,uuid: string,name: string,gender: string,birth: string,country: string,city: string,phone: string,email: string,uname: string,idpass: number,bio: string,profile: string,active:number,created_at : string,updated_at : string,info:object}}>}
+ * @param {boolean} [withRooms=false] get rooms list in with return object
+ * @returns {Promise<{err, data:{iduser: number,uuid: string,name: string,gender: string,birth: string,country: string,city: string,phone: string,email: string,uname: string,idpass: number,bio: string,profile: string,active:number,created_at : string,updated_at : string,info:object},rooms:Array<number> | undefined}>}
  */
-async function _upsertUser(user) {
+async function upsertUser(user, withRooms = false) {
   const uniqueKeys = ['iduser', 'uuid', 'email', 'phone', 'uname'];
   const key = uniqueKeys.find((uk) => Object.hasOwn(user, uk));
   if (!key) return { err: 'no unique key found.' };
@@ -107,10 +107,18 @@ async function _upsertUser(user) {
       values = Object.values(user);
       query = `insert into users (${keys}) values ( ${v} )`;
     }
-
     const r = await s.query(query, values);
+    const user_ = { ...user, ...result };
+    if (withRooms) {
+      const { rows: rooms } = await s.query(
+        `select idroom from members where iduser = $1 order by idroom;`,
+        user_.iduser,
+      );
+      await s.release();
+      return { err: null, data: user_, rooms };
+    }
     await s.release();
-    return { err: null, data: { ...user, ...result } };
+    return { err: null, data: user_ };
   } catch (err) {
     // console.warn(err);
     return { err };
@@ -121,7 +129,7 @@ async function _upsertUser(user) {
  * @param {{iduser: number,uuid: string,name: string,gender: string,birth: string,country: string,city: string,phone: string,email: string,uname: string,idpass: number,bio: string,profile: string,active:number,created_at : string,updated_at : string,info:object}} user
  * @returns {Promise<{err, data:{iduser: number,uuid: string,name: string,gender: string,birth: string,country: string,city: string,phone: string,email: string,uname: string,idpass: number,bio: string,profile: string,active:number,created_at : string,updated_at : string,info:object}}>}
  */
-async function _checkUser(user) {
+async function checkUser(user) {
   const uniqueKeys = ['iduser', 'uuid', 'email', 'phone', 'uname'];
   const key = uniqueKeys.find((uk) => Object.hasOwn(user, uk));
   if (!key) return { err: 'no unique key found.' };
@@ -163,7 +171,7 @@ async function getUserIDs(uuids = [], pool) {
   return result;
 }
 module.exports._db = _db;
-module.exports._upsertUser = _upsertUser;
+module.exports._upsertUser = upsertUser;
 module.exports._getUserIDs = getUserIDs;
-module.exports._checkUser = _checkUser;
-module.exports._updateUser = _updateUser;
+module.exports._checkUser = checkUser;
+module.exports._updateUser = updateUser;

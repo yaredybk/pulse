@@ -8,7 +8,7 @@ const typeDef = require('../sql/typeDef.js');
  * @param {'chat' | 'contact' | 'search'} type data type [chat, contact, search]
  * @param {'private' | 'room' | 'public'} category privacy indicator like [private, room, public]
  * @param {string} touuid receiver uuid
- * @param {string} fromuuid sender uuid
+ * @param {string} from sender iduser
  * @param {Function} cb callback function
  * @returns {void}
  */
@@ -17,14 +17,16 @@ function storeWSdata(
   root,
   type,
   category,
-  touuid,
-  fromuuid,
+  to_,
+  from,
   cb = () => null,
 ) {
   // root is ignored for now
   switch (type) {
     case 'chat':
-      return storeChat(data, category, touuid, fromuuid, cb);
+      return storeChat(data, to_, from, cb);
+    case 'room':
+      return storeRoomChat({content:data,idroom:to_,sender:from}, cb);
 
     default:
       console.warn('UNHANDLED storeWSdata', type);
@@ -35,25 +37,22 @@ function storeWSdata(
 /**
  * process all chats transmitted over websocket
  * @param {string} data message data
- * @param {'private' | 'room' | 'public'} category privacy indicator like [private, room, public]
  * @param {string} touuid receiver uuid
- * @param {string} fromuuid sender uuid
+ * @param {string} iduser1 sender iduser
  * @param {Function} cb callback function
  * @returns {void}
  */
 async function storeChat(
   data,
-  category,
   touuid,
-  fromuuid,
+  iduser1,
   cb = (err, data) => null,
 ) {
   const pool_ = await _db.pool.connect().catch((e) => {
     console.trace(e);
-    res.sendStatus(500);
   });
   try {
-    const [iduser1, iduser2] = await _getUserIDs([fromuuid, touuid], pool_);
+    const [ iduser2] = await _getUserIDs([ touuid], pool_);
 
     /**
      * @type {typeDef.Chat}
@@ -85,10 +84,43 @@ async function storeChat(
       rows: [{ idchat_text }],
     } = result2;
     pool_.release();
-    cb(null, { idchat, idchat_text, fromuuid, touuid });
+    cb(null, { idchat, idchat_text, touuid });
   } catch (error) {
     cb(error);
     if (pool_.release) pool_.release();
   }
 }
-module.exports = { storeWSdata };
+
+/**
+ *
+ * @param {{ content:string, sender:number, idroom:number }} param0
+ * @param {Function} cb
+ */
+async function storeRoomChat(
+  { content, sender, idroom },
+  cb = (err, data) => null,
+) {
+  const pool_ = await _db.pool.connect().catch((e) => {
+    console.trace(e);
+  });
+  try {
+    /**
+     * @type {typeDef.ChatText}
+     */
+    const message_ = { content, idroom, sender };
+    const result2 = await pool_.query(
+      `insert into room_text (${Object.keys(message_).join(', ')}) values ($1, $2, $3) RETURNING idroom_text;`,
+      Object.values(message_),
+    );
+    const {
+      rows: [{ idroom_text }],
+    } = result2;
+    cb(null, { idroom_text });
+  } catch (error) {
+    cb(error);
+    // if (pool_.release) pool_.release();
+  } finally {
+    pool_.release();
+  }
+}
+module.exports = {storeChat,storeRoomChat, storeWSdata };

@@ -7,7 +7,7 @@ const helmet = require('helmet');
 const { _rdAuth } = require('./utils/auth0.js');
 const jwt = require('jsonwebtoken');
 const { _upsertUser } = require('./utils/db.js');
-const { _session } = require('./utils/session.js');
+const { _session, _upgradeSession } = require('./utils/session.js');
 const { newWebSocket } = require('./utils/webSocket.js');
 
 const app = express();
@@ -73,24 +73,17 @@ app.use(
           algorithms: ['HS256'],
         });
         const { name, picture: profile, email, updated_at, ...info } = decoded;
-        const { err, data } = await _upsertUser({
+        const { err } = await _upgradeSession(req, {
           name,
           email,
           profile,
           updated_at,
           info,
         });
-        if (err) {
-          console.warn(err);
-        } else {
-          req.session.uuid = data.uuid;
-          req.session.save((err) => {
-            if (err) console.warn(err);
-          });
-        }
-        return session;
+        if (err) console.warn(err);
       } catch (error) {
         console.warn(error);
+      } finally {
         return session;
       }
       // console.log(session);
@@ -126,6 +119,9 @@ app.get('/api/logout', (req, res) => {
   //   process.env.NODE_ENV == 'development'
   //     ? new URL(req.headers.referer || req.headers.host).origin
   //     : process.env.AUTH0_AUDIENCE;
+  req.session.destroy(function (err) {
+    console.warn(err);
+  });
   return res.oidc.logout({
     returnTo: process.env.AUTH0_AUDIENCE,
     authorizationParams: {
@@ -156,10 +152,17 @@ app.post(
 app.get('/api/protected', (rq, rs) => {
   rs.send({ status: 'you are authenticated!', user: rq.oidc.user });
 });
-
+app.get('/api/info/me', requiresAuth(), require('./src/controllers/info').me);
 app.use(express.json());
+app.use((req, res, next) => {
+  if (req.session.iduser && req.oidc.user) return next();
+  {
+    console.log(req.session.iduser, req.oidc.user);
+    return res.sendStatus(401);
+  }
+});
 app.use('/api/list', requiresAuth(), require('./src/routes/list_routs.js'));
-app.use('/api', require('./src/routes/api_routes.js'));
+app.use('/api', requiresAuth(), require('./src/routes/api_routes.js'));
 
 // START
 setTimeout(() => {

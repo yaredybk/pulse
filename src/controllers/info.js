@@ -49,6 +49,7 @@ exports.me = async (req, res) => {
       return res.sendStatus(500);
     } else {
       req.session.uuid = data.uuid;
+      req.session.iduser = data.iduser;
       req.session.save((err) => {
         if (err) console.warn(err);
       });
@@ -75,12 +76,16 @@ exports.me = async (req, res) => {
       else {
         data = d2;
         req.session.uuid = data.uuid;
+        req.session.iduser = data.iduser;
+
         req.session.save((err) => {
           if (err) console.warn(err);
         });
       }
     } else {
       req.session.uuid = data.uuid;
+      req.session.iduser = data.iduser;
+
       req.session.save((err) => {
         if (err) console.warn(err);
       });
@@ -172,4 +177,34 @@ exports.editMe = async (req, res) => {
   res.send({
     user: data,
   });
+};
+/**
+ *
+ * @param {express.Request} req
+ * @param {express.Response} res
+ * @returns
+ */
+exports.newwRoom = async (req, res) => {
+  const iduser = req.session.iduser;
+  const uuid = req.session.uuid;
+  const { name, bio } = req.body;
+  if (!name) return res.sendStatus(400);
+
+  const {
+    err,
+    rows: [room],
+  } = await _db.query(
+    `insert into rooms (name, bio, admin) \
+    values ($1,$2,$3) RETURNING idroom;`,
+    [name, bio, iduser],
+  );
+  if (err) {
+    console.warn(err);
+    return res.sendStatus(500);
+  }
+  if (room && room.idroom)
+    return res.send({
+      room: { name, bio, ...room },
+    });
+  return res.sendStatus(500);
 };

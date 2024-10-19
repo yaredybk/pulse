@@ -15,6 +15,19 @@ BEGIN
   RETURN NEW;
 END;
 $$ language 'plpgsql';
+
+-- add the creator of a room to its members
+-- and add "room created message"
+CREATE OR REPLACE FUNCTION add_admin_to_members()
+RETURNS TRIGGER AS $$
+BEGIN
+	INSERT INTO members (idroom, iduser) VALUES (NEW.idroom, NEW.admin);
+	INSERT INTO room_text (idroom,sender,content) 
+		VALUES (NEW.idroom, NEW.admin, concat('room created at: ', now()));
+  RETURN NEW;
+END;
+$$ language 'plpgsql';
+
 -- USERS TABLE
 DROP VIEW IF EXISTS chat_private;
 DROP VIEW IF EXISTS contact_global;	
@@ -94,13 +107,13 @@ execute function change_updated_at_column ();
 
 
 
-DROP TABLE IF EXISTS room;
-CREATE TABLE room (
+DROP TABLE IF EXISTS rooms;
+CREATE TABLE rooms (
   idroom SERIAL PRIMARY KEY,
   uuid UUID DEFAULT gen_random_uuid() UNIQUE NOT NULL,
   name TEXT NOT NULL,
-  rname TEXT UNIQUE NOT NULL,
   admin BIGINT NOT NULL,
+  rname TEXT UNIQUE NULL,
   bio TEXT NULL,
   profile TEXT NULL,
   active SMALLINT NULL,
@@ -108,7 +121,7 @@ CREATE TABLE room (
   updated_at timestamp with time zone not null default now()
 );
 create trigger change_room_updated_at before
-update on room for each row
+update on rooms for each row
 execute function change_updated_at_column ();
 
 DROP TABLE IF EXISTS members;
@@ -117,6 +130,7 @@ CREATE TABLE members (
   iduser BIGINT NOT NULL,
   created_at timestamp with time zone not null default now()
 );
+
 
 DROP TABLE IF EXISTS room_text;
 CREATE TABLE room_text (
@@ -130,6 +144,10 @@ CREATE TABLE room_text (
 create trigger change_room_text_updated_at before
 update on room_text for each row
 execute function change_updated_at_column ();
+
+create trigger add_admin_to_members after
+insert on rooms for each row
+execute function add_admin_to_members ();
 
 
 DROP TABLE IF EXISTS profiles;
