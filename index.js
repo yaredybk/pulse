@@ -31,7 +31,11 @@ app.use(
   }),
 );
 // STATIC ASSETS OTHER THAN /a
-app.use(express.static('pages'));
+app.use(
+  express.static('pages', {
+    maxAge: '1d', // caching for one week
+  }),
+);
 // STATIC ASSETS OF THE APP
 app.use('/a', express.static('a', { fallthrough: true, redirect: true }));
 app.get('/a/*', (req, res) => {
@@ -157,11 +161,17 @@ app.use(express.json());
 app.use((req, res, next) => {
   if (req.session.iduser && req.oidc.user) return next();
   {
-    console.log(req.session.iduser, req.oidc.user);
+    // console.log(req.session.iduser, req.oidc.user);
     return res.sendStatus(401);
   }
 });
 app.use('/api/list', requiresAuth(), require('./src/routes/list_routs.js'));
+app.use(
+  '/api/audio/',
+  express.static('audio', {
+    maxAge: '7d', // caching for one week
+  }),
+);
 app.use('/api', requiresAuth(), require('./src/routes/api_routes.js'));
 
 // START
