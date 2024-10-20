@@ -45,9 +45,8 @@ async function _upgradeSession(req, user) {
     req.session.rooms = rooms;
     req.session.save((err) => {
       if (err) return { err };
-      return { err: null, data };
     });
-    return;
+    return { err: null, data };
   }
 }
 

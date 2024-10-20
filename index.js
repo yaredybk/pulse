@@ -158,12 +158,10 @@ app.get('/api/protected', (rq, rs) => {
 });
 app.get('/api/info/me', requiresAuth(), require('./src/controllers/info').me);
 app.use(express.json());
+// Auth check
 app.use((req, res, next) => {
   if (req.session.iduser && req.oidc.user) return next();
-  {
-    // console.log(req.session.iduser, req.oidc.user);
-    return res.sendStatus(401);
-  }
+  return res.status(401).send('');
 });
 app.use('/api/list', requiresAuth(), require('./src/routes/list_routs.js'));
 app.use(
@@ -173,7 +171,11 @@ app.use(
   }),
 );
 app.use('/api', requiresAuth(), require('./src/routes/api_routes.js'));
-
+app.use((req, res) => {
+  if (req.accepts('html'))
+    return res.sendFile(path.join(__dirname, './pages/404.html'));
+  res.sendStatus(404);
+});
 // START
 setTimeout(() => {
   // START HTTP SERVER
