@@ -109,7 +109,8 @@ async function storeRoomChat(
      */
     const message_ = { content, idroom, sender };
     const result2 = await pool_.query(
-      `insert into room_text (${Object.keys(message_).join(', ')}) values ($1, $2, $3) RETURNING idroom_text;`,
+      `insert into room_text (${Object.keys(message_).join(', ')}) \
+      values ($1, $2, $3) RETURNING idroom_text;`,
       Object.values(message_),
     );
     const {

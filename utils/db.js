@@ -16,7 +16,7 @@ class _pg {
     try {
       return await client.query(...args);
     } catch (err) {
-      return { err,rows:[] };
+      return { err, rows: [] };
     } finally {
       client.release();
     }
@@ -59,7 +59,45 @@ async function updateUser(user) {
     const {
       rows: [result],
     } = await s.query(
-      `select active, bio, city, country, email, gender, name, profile, uuid from users where ${key} = $1;`,
+      `select name,email, bio, city, country,  gender,  active,profile, uuid from users where ${key} = $1;`,
+      [value],
+    );
+    await s.release();
+    return { err: null, data: { ...user, ...result } };
+  } catch (err) {
+    // console.warn(err);
+    return { err };
+  }
+}
+/**
+ *
+ * @param {{iduser: number,uuid: string,name: string,gender: string,birth: string,country: string,city: string,phone: string,email: string,uname: string,idpass: number,bio: string,profile: string,active:number,created_at : string,updated_at : string,info:object}} user
+ * @returns {Promise<{err, data:{iduser: number,uuid: string,name: string,gender: string,birth: string,country: string,city: string,phone: string,email: string,uname: string,idpass: number,bio: string,profile: string,active:number,created_at : string,updated_at : string,info:object}}>}
+ */
+async function updateRoom(user) {
+  const uniqueKeys = ['idroom', 'uuid', 'rname'];
+  const key = uniqueKeys.find((uk) => Object.hasOwn(user, uk));
+  if (!key) return { err: 'no unique key found.' };
+  const value = user[key];
+
+  try {
+    const s = await _db.pool.connect();
+    let query = '';
+    let values = [];
+    delete user[key];
+    let keys = Object.keys(user);
+    if (keys.length == 0) {
+      s.release();
+      return { err: 'nodata' };
+    }
+    keys = keys.map((k, ind) => ` ${k} =  $${ind + 2}`).join(', ');
+    values = [value, ...Object.values(user)];
+    query = `update rooms set ${keys} where ${key} = $1 `;
+    await s.query(query, values);
+    const {
+      rows: [result],
+    } = await s.query(
+      `select name,bio,idroom,admin,profile,active,  uuid from rooms where ${key} = $1;`,
       [value],
     );
     await s.release();
@@ -112,7 +150,7 @@ async function upsertUser(user, withRooms = false) {
     if (withRooms) {
       const { rows: rooms } = await s.query(
         `select idroom from members where iduser = $1 order by idroom;`,
-        user_.iduser,
+        [user_.iduser],
       );
       await s.release();
       return { err: null, data: user_, rooms };
@@ -129,7 +167,7 @@ async function upsertUser(user, withRooms = false) {
  * @param {{iduser: number,uuid: string,name: string,gender: string,birth: string,country: string,city: string,phone: string,email: string,uname: string,idpass: number,bio: string,profile: string,active:number,created_at : string,updated_at : string,info:object}} user
  * @returns {Promise<{err, data:{iduser: number,uuid: string,name: string,gender: string,birth: string,country: string,city: string,phone: string,email: string,uname: string,idpass: number,bio: string,profile: string,active:number,created_at : string,updated_at : string,info:object}}>}
  */
-async function checkUser(user) {
+async function checkUser(user, withRooms = false) {
   const uniqueKeys = ['iduser', 'uuid', 'email', 'phone', 'uname'];
   const key = uniqueKeys.find((uk) => Object.hasOwn(user, uk));
   if (!key) return { err: 'no unique key found.' };
@@ -139,9 +177,17 @@ async function checkUser(user) {
     const {
       rows: [result],
     } = await s.query(`select * from users where ${key} = $1;`, [value]);
+    let rooms;
     if (result) {
+      if (withRooms) {
+        const { rows:[result_] } = await s.query(
+          `select array (select idroom from members where iduser = $1 order by idroom);`,
+          [result.iduser],
+        );
+        rooms = result_.array;
+      }
       s.release();
-      return { err: null, data: { ...user, ...result } };
+      return { err: null, data: { ...user, ...result }, rooms };
     } else return { err: 'not found' };
   } catch (err) {
     return { err };
@@ -175,3 +221,4 @@ module.exports._upsertUser = upsertUser;
 module.exports._getUserIDs = getUserIDs;
 module.exports._checkUser = checkUser;
 module.exports._updateUser = updateUser;
+module.exports._updateRoom = updateRoom;

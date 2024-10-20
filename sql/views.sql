@@ -20,8 +20,10 @@ LEFT JOIN
     users u2 ON c.iduser2 = u2.iduser;
 
 -- contact public list
+drop view if exists contact_global;
 CREATE OR REPLACE VIEW contact_global AS
 SELECT 
+  iduser,
   uuid,
   name,
   email,

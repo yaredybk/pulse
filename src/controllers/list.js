@@ -62,22 +62,26 @@ exports.room_content = async (req, res) => {
   const iduser = req.session.iduser;
   const pool_ = await _db.pool.connect().catch((e) => {
     console.trace(e);
-    res.sendStatus(500);
   });
   try {
     let { rows } = await pool_.query(
-      `select * from room_text
-       join  members on room_text.idroom = members.idroom
-       where members.iduser = $1 and members.idroom = $2;`,
+      `select content,u.uuid,u.profile from room_text \
+       join  (select idroom, iduser from members \
+       where members.iduser = $1 and members.idroom = $2) as m
+       on room_text.idroom = m.idroom 
+       join users u on room_text.sender = u.iduser \
+       ;`,
       [iduser, idroom],
     );
-    pool_.release();
+    // pool_.release();
     if (!rows || rows.length == 0) return res.sendStatus(401);
     return res.send(rows);
   } catch (error) {
     console.warn(error);
     res.sendStatus(500);
-    if (pool_.release) pool_.release();
+    // if (pool_.release) pool_.release();
+  }finally{
+    pool_.release()
   }
 };
 

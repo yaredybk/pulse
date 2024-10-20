@@ -47,6 +47,7 @@ async function _upgradeSession(req, user) {
       if (err) return { err };
       return { err: null, data };
     });
+    return;
   }
 }
 

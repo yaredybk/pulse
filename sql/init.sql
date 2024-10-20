@@ -51,6 +51,7 @@ CREATE TABLE users (
   updated_at timestamp with time zone not null default now(),
   info jsonb null default '{}'::jsonb
 );
+
 create trigger change_users_updated_at before
 update on users for each row
 execute function change_updated_at_column ();
@@ -117,9 +118,11 @@ CREATE TABLE rooms (
   bio TEXT NULL,
   profile TEXT NULL,
   active SMALLINT NULL,
+  info jsonb null default '{}'::jsonb,
   created_at timestamp with time zone not null default now(),
   updated_at timestamp with time zone not null default now()
 );
+
 create trigger change_room_updated_at before
 update on rooms for each row
 execute function change_updated_at_column ();
