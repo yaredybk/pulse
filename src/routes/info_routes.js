@@ -7,10 +7,10 @@ const { _db } = require('../../utils/db.js');
 
 const apiRoutes = express.Router();
 
-// root path /api
+// root path /api/info
 
 apiRoutes
-  .route('/info/me')
+  .route('/me')
   .get(info.me)
   .post(
     fileUpload({
@@ -20,9 +20,9 @@ apiRoutes
     }),
     info.editMe,
   );
-apiRoutes.route('/info/user/:uuid').get(info.user);
+apiRoutes.route('/user/:uuid').get(info.user);
 apiRoutes
-  .route('/info/room')
+  .route('/room')
   // .get(info.me)
   .post(
     fileUpload({
@@ -33,7 +33,7 @@ apiRoutes
     info.newwRoom,
   );
 apiRoutes
-  .route('/info/room/:idroom')
+  .route('/room/:idroom')
   .get(info.room)
   .post(
     fileUpload({
@@ -44,11 +44,11 @@ apiRoutes
     info.editRoom,
   );
 apiRoutes
-  .route('/info/room/:idroom/members')
+  .route('/room/:idroom/members')
   .get(info.roomMembers)
   .post(info.addRoomMembers)
   // .delete(info.deleteRoomMembers);
 
-// apiRoutes.route('/info/user/:uuid').get(info.user);
+// apiRoutes.route('/user/:uuid').get(info.user);
 
 module.exports = apiRoutes;

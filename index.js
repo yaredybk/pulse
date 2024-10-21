@@ -161,7 +161,7 @@ app.use(express.json());
 // Auth check
 app.use((req, res, next) => {
   if (req.session.iduser && req.oidc.user) return next();
-  return res.status(401).send('');
+  return res.status(401).send('unauthorized request');
 });
 app.use('/api/list', requiresAuth(), require('./src/routes/list_routs.js'));
 app.use(
@@ -170,7 +170,7 @@ app.use(
     maxAge: '7d', // caching for one week
   }),
 );
-app.use('/api', requiresAuth(), require('./src/routes/api_routes.js'));
+app.use('/api/info', requiresAuth(), require('./src/routes/info_routes.js'));
 app.use((req, res) => {
   if (req.accepts('html'))
     return res.sendFile(path.join(__dirname, './pages/404.html'));

@@ -13,6 +13,8 @@ exports.chat_content = async (req, res) => {
    * @type {{category: 'private' | 'room' | 'public' | 'me'}}
    */
   const { category, uuid } = req.params;
+  const { value, cursor } = req.query;
+  const idchat_text = Number(value);
   const uuid2 = req.session.uuid;
   const iduser2 = req.session.iduser;
   const pool_ = await _db.pool.connect().catch((e) => {
@@ -20,7 +22,7 @@ exports.chat_content = async (req, res) => {
     res.sendStatus(500);
   });
   try {
-    const [iduser1] = await _getUserIDs([uuid]);
+    const [iduser1] = await _getUserIDs([uuid], pool_);
     let { rows } = await pool_.query(
       `select idchat from chats \
       WHERE (iduser1 = $1 AND iduser2 = $2) or (iduser1 = $2 AND iduser2 = $1)`,
@@ -31,13 +33,19 @@ exports.chat_content = async (req, res) => {
      */
     let chat = rows[0];
     if (!chat) return res.send([]);
-    let r_ = await pool_.query(
-      `select * from (select idchat_text,content, created_at, updated_at, \
+    let q = `select * from (select idchat_text,content, created_at, updated_at, \
       (case when sender = $1 then $2 else $3 end) as uuid \
       from chat_text \
-      WHERE idchat = $4 order by  idchat_text desc limit 50) as tmp order by idchat_text asc`,
-      [iduser1, uuid, uuid2, chat.idchat],
-    );
+      WHERE idchat = $4 order by  idchat_text desc limit 50) as tmp order by idchat_text asc`;
+    const value_list = [iduser1, uuid, uuid2, chat.idchat];
+    if (idchat_text) {
+      q = `select * from (select idchat_text,content, created_at, updated_at, \
+      (case when sender = $1 then $2 else $3 end) as uuid \
+      from chat_text \
+      WHERE idchat = $4 and idchat_text < $5 order by  idchat_text desc limit 50) as tmp order by idchat_text asc`;
+      value_list.push(idchat_text);
+    }
+    let r_ = await pool_.query(q, value_list);
     pool_.release();
     return res.send(r_.rows);
   } catch (error) {
@@ -58,30 +66,45 @@ exports.room_content = async (req, res) => {
    * @type {{category: 'private' | 'room' | 'public' | 'me'}}
    */
   const { category, uuid, idroom } = req.params;
+  const { value, cursor } = req.query;
+  const idroom_text = Number(value);
   const uuid2 = req.session.uuid;
   const iduser = req.session.iduser;
   const pool_ = await _db.pool.connect().catch((e) => {
     console.trace(e);
   });
   try {
-    let { rows } = await pool_.query(
-      `select content,u.uuid,u.profile from room_text \
-       join  (select idroom, iduser from members \
-       where members.iduser = $1 and members.idroom = $2) as m
-       on room_text.idroom = m.idroom 
-       join users u on room_text.sender = u.iduser \
-       ;`,
-      [iduser, idroom],
-    );
+    let q = `select * from \
+            ( select idroom_text,content,u.uuid,u.profile from room_text \
+              join  (select idroom, iduser from members where members.iduser = $1 and members.idroom = $2) \
+                      as m on room_text.idroom = m.idroom \
+              join users u on room_text.sender = u.iduser  \
+              order by  idroom_text desc limit 50 )  as tmp \
+            order by idroom_text asc\
+            ;`;
+    const value_list = [iduser, idroom];
+    if (idroom_text) {
+      q = `select * from \
+          ( select idroom_text,content,u.uuid,u.profile from room_text \
+            join  (select idroom, iduser from members where members.iduser = $1 and members.idroom = $2) \
+                    as m on room_text.idroom = m.idroom \
+            join users u on room_text.sender = u.iduser  \
+            where idroom_text < $3 \
+            order by  idroom_text desc limit 50 )  as tmp \
+          order by idroom_text asc\
+          ;`;
+      value_list.push(idroom_text);
+    }
+    let { rows } = await pool_.query(q, value_list);
     // pool_.release();
-    if (!rows || rows.length == 0) return res.sendStatus(401);
+    // if (!rows || rows.length == 0) return res.sendStatus(401);
     return res.send(rows);
   } catch (error) {
     console.warn(error);
     res.sendStatus(500);
     // if (pool_.release) pool_.release();
-  }finally{
-    pool_.release()
+  } finally {
+    pool_.release();
   }
 };
 
